@@ -1,0 +1,48 @@
+- hosts: controller
+
+  vars_files:
+  - roles/common/vars/main.yml
+
+  tasks:
+
+    - name: Create image repository
+      file: path=~/images owner=root state=directory mode=0755
+
+    - name: Download Test Image
+      command: wget http://download.cirros-cloud.net/0.3.4/cirros-0.3.4-x86_64-disk.img -O ~/images/cirros-0.3.4-x86_64-disk.qcow2
+
+    - name: Register a qcow2 image
+      command: glance --os-auth-url http://{{CONTROLLER}}:5000/v2.0 --os-tenant-name {{DEMO_PROJECT}} --os-username {{DEMO_USER}} --os-password {{DEMO_PASS}} image-create --name "cirros-qcow2" --disk-format qcow2 --container-format bare --file ~/images/cirros-0.3.4-x86_64-disk.qcow2 --progress
+
+    - name: Create external network as admin user
+      command: neutron --os-auth-url http://{{CONTROLLER}}:5000/v2.0 --os-tenant-name {{ADMIN_PROJECT}} --os-username {{ADMIN_USER}} --os-password {{ADMIN_PASS}} net-create ext-net --router:external --provider:physical_network external --provider:network_type flat
+
+    - name: Create subnet on the external network as admin user
+      command: neutron --os-auth-url http://{{CONTROLLER}}:5000/v2.0 --os-tenant-name {{ADMIN_PROJECT}} --os-username {{ADMIN_USER}} --os-password {{ADMIN_PASS}} subnet-create ext-net {{EXT_SUBNET}} --name ext-subnet --allocation-pool start={{EXT_SUBNET_START}},end={{EXT_SUBNET_END}} --disable-dhcp --gateway {{EXT_SUBNET_GW}}
+
+    - name: Create a private network as a non admin user
+      command: neutron --os-auth-url http://{{CONTROLLER}}:5000/v2.0 --os-tenant-name {{DEMO_PROJECT}} --os-username {{DEMO_USER}} --os-password {{DEMO_PASS}} net-create int-net
+
+    - name: Create a private subnet as a non admin user
+      command: neutron --os-auth-url http://{{CONTROLLER}}:5000/v2.0 --os-tenant-name {{DEMO_PROJECT}} --os-username {{DEMO_USER}} --os-password {{DEMO_PASS}} subnet-create int-net {{PRIV_SUBNET}} --name int-subnet --gateway {{PRIV_SUBNET_GW}}
+
+    - name: Create the router
+      command: neutron --os-auth-url http://{{CONTROLLER}}:5000/v2.0 --os-tenant-name {{DEMO_PROJECT}} --os-username {{DEMO_USER}} --os-password {{DEMO_PASS}} router-create my-router
+
+    - name: Attach the router to the Internal subnet
+      command: neutron --os-auth-url http://{{CONTROLLER}}:5000/v2.0 --os-tenant-name {{DEMO_PROJECT}} --os-username {{DEMO_USER}} --os-password {{DEMO_PASS}} router-interface-add my-router int-subnet
+
+    - name: Attach the router to the external network by setting it as the gateway
+      command: neutron --os-auth-url http://{{CONTROLLER}}:5000/v2.0 --os-tenant-name {{DEMO_PROJECT}} --os-username {{DEMO_USER}} --os-password {{DEMO_PASS}} router-gateway-set my-router ext-net
+
+    - name: Adding pub key to login instances
+      command: nova --os-auth-url http://{{CONTROLLER}}:5000/v2.0 --os-tenant-name {{DEMO_PROJECT}} --os-username {{DEMO_USER}} --os-password {{DEMO_PASS}} keypair-add --pub_key {{PUBKEY_FILE}} MyKey
+
+    - name: Boot an instance using flavor and image names
+      command: nova --os-auth-url http://{{CONTROLLER}}:5000/v2.0 --os-tenant-name {{DEMO_PROJECT}} --os-username {{DEMO_USER}} --os-password {{DEMO_PASS}} boot --image cirros-qcow2 --flavor m1.tiny --key-name MyKey MyFirstInstance 
+
+    - name: Update default security group to allow SSH access from all
+      command: nova --os-auth-url http://{{CONTROLLER}}:5000/v2.0 --os-tenant-name {{DEMO_PROJECT}} --os-username {{DEMO_USER}} --os-password {{DEMO_PASS}} secgroup-add-rule default tcp 22 22 0.0.0.0/0
+
+    - name: Update default security group to permit ICMP from all
+      command: nova --os-auth-url http://{{CONTROLLER}}:5000/v2.0 --os-tenant-name {{DEMO_PROJECT}} --os-username {{DEMO_USER}} --os-password {{DEMO_PASS}} secgroup-add-rule default icmp -1 -1 0.0.0.0/0
