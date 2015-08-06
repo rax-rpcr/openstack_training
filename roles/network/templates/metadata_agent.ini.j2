@@ -1,0 +1,12 @@
+[DEFAULT]
+auth_uri = http://{{CONTROLLER}}:5000
+auth_url = http://{{CONTROLLER}}:35357
+auth_region = {{REGION_NAME}}
+auth_plugin = password
+project_domain_id = default
+user_domain_id = default
+project_name = {{SERVICE_PROJECT}}
+username = {{NEUTRON_USER}}
+password = {{NEUTRON_PASS}}
+nova_metadata_ip = {{CONTROLLER}}
+metadata_proxy_shared_secret = {{METADATA_SECRET}}

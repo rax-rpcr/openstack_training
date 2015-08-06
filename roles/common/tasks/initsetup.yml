@@ -1,0 +1,30 @@
+- name: Setting up hosts variables
+  template: src=hosts.j2 dest=/etc/hosts
+
+- name: Making sure NTP is installed
+  yum: pkg=ntp state=installed
+  tags: ntp
+
+- name: Validating ntpd is running and enabled
+  service: name=ntpd state=running enabled=yes
+  tags: ntp
+
+- name: Install the Openstack repo from a remote location
+  yum: name=http://rdo.fedorapeople.org/openstack-kilo/rdo-release-kilo.rpm state=present
+
+- name: Upgrade all packages
+  yum: name=* state=latest
+
+- name: Install the latest version of openstack-selinux
+  yum: name=openstack-selinux state=latest
+
+- name: Reboot server after OS upgrade to 7.1 and to load new kernel
+  shell: sleep 2 && shutdown -r now
+  async: 1
+  poll: 0
+  ignore_errors: true
+
+- name: Waiting for server to come back
+  local_action: wait_for host={{ inventory_hostname }} port=22 state=started delay=15
+  sudo: false
+

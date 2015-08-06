@@ -1,0 +1,40 @@
+# needed, commenting out for virtual deployment ################
+#- name: Adding kernel networking parameters with one values
+#  sysctl: name={{item}} value=1 sysctl_set=yes state=present
+#  with_items:
+#      - net.bridge.bridge-nf-call-iptables
+#      - net.bridge.bridge-nf-call-ip6tables
+
+#- name: Adding kernel networking parameters with zero values
+#  sysctl: name={{item}} value=0 sysctl_set=yes state=present reload=yes
+#  with_items:
+#      - net.ipv4.conf.all.rp_filter
+#      - net.ipv4.conf.default.rp_filter
+
+- name: Installing Neutron components
+  action: yum pkg={{item}} state=installed
+  with_items:
+      - openstack-neutron
+      - openstack-neutron-ml2
+      - openstack-neutron-openvswitch
+
+- name: Adding the neutron settings
+  template: src=neutron.conf.j2 dest=/etc/neutron/neutron.conf
+
+- name: Adding the neutron ML2 plug-in settings
+  template: src=ml2_conf.ini.j2 dest=/etc/neutron/plugins/ml2/ml2_conf.ini
+
+- name: Create symlink pointing to the ML2 plug-in configuration file
+  shell: ln -s /etc/neutron/plugins/ml2/ml2_conf.ini /etc/neutron/plugin.ini
+
+- name: Start the openvswitch service and enable at boot time
+  service: name=openvswitch.service state=started enabled=yes
+
+- name: Replace the path of plugin.ini (bug issue)
+  replace: dest=/usr/lib/systemd/system/neutron-openvswitch-agent.service regexp='plugins/openvswitch/ovs_neutron_plugin.ini' replace='plugin.ini' backup=yes
+
+- name: Start the Open VSwitch agent at boot time
+  service: name=neutron-openvswitch-agent.service enabled=yes
+  notify: 
+      - Restart nova-api service
+

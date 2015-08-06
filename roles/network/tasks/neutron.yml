@@ -1,0 +1,60 @@
+- name: Adding kernel networking parameters with one values
+  sysctl: name=net.ipv4.ip_forward value=1 sysctl_set=yes state=present
+
+- name: Adding kernel networking parameters with zero values
+  sysctl: name={{item}} value=0 sysctl_set=yes state=present reload=yes
+  with_items:
+      - net.ipv4.conf.all.rp_filter
+      - net.ipv4.conf.default.rp_filter
+
+- name: Installing Neutron components
+  action: yum pkg={{item}} state=installed
+  with_items:
+      - openstack-neutron
+      - openstack-neutron-ml2
+      - openstack-neutron-openvswitch
+      - python-neutronclient
+
+- name: Adding the neutron settings
+  template: src=neutron.conf.j2 dest=/etc/neutron/neutron.conf
+
+- name: Adding the neutron ML2 plug-in settings
+  template: src=ml2_conf.ini.j2 dest=/etc/neutron/plugins/ml2/ml2_conf.ini
+
+- name: Configure the Layer-3 (L3) agent
+  template: src=l3_agent.ini.j2 dest=/etc/neutron/l3_agent.ini
+
+- name: Configure the dhcp agent
+  template: src=dhcp_agent.ini.j2 dest=/etc/neutron/dhcp_agent.ini
+
+- name: Configure the metadata agent
+  template: src=metadata_agent.ini.j2 dest=/etc/neutron/metadata_agent.ini
+
+- name: Start the openvswitch service and enable at boot time
+  service: name=openvswitch.service state=started enabled=yes
+#  notify:
+#      - Restart nove-api service
+
+- name: Add the external bridge
+  command: ovs-vsctl add-br br-ext
+
+- name: Add a port to the external bridge that connects to the physical external network interface
+  command: ovs-vsctl add-port br-ext {{EXT_INTERFACE}}
+
+- name: Create symlink pointing to the ML2 plug-in configuration file
+  shell: ln -s /etc/neutron/plugins/ml2/ml2_conf.ini /etc/neutron/plugin.ini
+
+- name: Replace the path of plugin.ini (bug issue)
+  replace: dest=/usr/lib/systemd/system/neutron-openvswitch-agent.service regexp='plugins/openvswitch/ovs_neutron_plugin.ini' replace='plugin.ini' backup=yes
+
+- name: Enable the ovs-cleanup service at boot time
+  service: name=neutron-ovs-cleanup.service enabled=yes
+
+- name: Start the Networking services and configure them to start at boot time
+  service: name={{item}} state=started enabled=yes
+  with_items:
+      - neutron-l3-agent.service
+      - neutron-dhcp-agent.service
+      - neutron-metadata-agent.service
+      - neutron-openvswitch-agent.service
+
