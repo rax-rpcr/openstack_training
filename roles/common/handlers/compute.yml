@@ -5,3 +5,8 @@
      - openstack-nova-scheduler.service
      - openstack-nova-conductor.service
 
+- name: Restart nova-compute service
+  service: name={{item}} state=restarted
+  with_items:
+    - openstack-nova-compute.service
+

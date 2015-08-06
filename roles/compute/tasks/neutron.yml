@@ -36,5 +36,5 @@
 - name: Start the Open VSwitch agent at boot time
   service: name=neutron-openvswitch-agent.service enabled=yes
   notify: 
-      - Restart nova-api service
+      - Restart nova-compute service
 

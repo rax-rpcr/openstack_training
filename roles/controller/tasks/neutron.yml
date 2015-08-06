@@ -40,5 +40,5 @@
 
 - name: Start the Networking services and configure them to start at boot time
   service: name=neutron-server.service state=started enabled=yes
-#  notify: 
-#      - Restart compute services
+  notify: 
+      - Restart compute services

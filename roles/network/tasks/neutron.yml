@@ -32,8 +32,8 @@
 
 - name: Start the openvswitch service and enable at boot time
   service: name=openvswitch.service state=started enabled=yes
-#  notify:
-#      - Restart nove-api service
+  notify:
+      - Restart nova-api service
 
 - name: Add the external bridge
   command: ovs-vsctl add-br br-ext
