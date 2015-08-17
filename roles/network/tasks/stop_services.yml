@@ -1,0 +1,24 @@
+- hosts: network
+
+  vars_files:
+  - ../../common/vars/main.yml
+
+  tasks:
+
+  - name: Stop the Networking services
+    service: name={{item}} state=stopped enabled=yes
+    with_items:
+      - neutron-server.service
+      - neutron-l3-agent.service
+      - neutron-dhcp-agent.service
+      - neutron-metadata-agent.service
+      - neutron-openvswitch-agent.service
+    ignore_errors: True
+
+  - name: Start the ovs-cleanup service to clean bridges
+    service: name=neutron-ovs-cleanup.service state=started
+    ignore_errors: True
+
+  - name: Stop the openvswitch service
+    service: name=openvswitch.service state=stopped
+    ignore_errors: True

@@ -1,0 +1,102 @@
+- hosts: controller
+
+  vars_files:
+  - ../../common/vars/main.yml
+
+  tasks:
+
+  - name: Stop the controller services
+    service: name={{item}} state=stopped
+    with_items:
+      - openstack-keystone.service
+      - memcached.service
+      - openstack-glance-api.service
+      - openstack-glance-registry.service
+      - openstack-cinder-volume.service 
+      - openstack-cinder-api.service
+      - openstack-cinder-scheduler.service
+      - lvm2-lvmetad.service
+      - target.service
+      - httpd.service
+    ignore_errors: True
+
+  - name: Remove Glance DB
+    mysql_db: name=glance state=absent
+    ignore_errors: True
+
+  - name: Remove Glance DB user
+    mysql_user: name={{ GLANCE_DBUSER }} state=absent
+    ignore_errors: True
+
+  - name: Remove Glance DB user anyhost
+    mysql_user: name={{ GLANCE_DBUSER }} host='%' state=absent
+    ignore_errors: True
+
+  - name: Remove Keystone DB
+    mysql_db: name=keystone state=absent
+    ignore_errors: True
+
+  - name: Remove Keystone DB user
+    mysql_user: name={{ KEYSTONE_DBUSER }} state=absent
+    ignore_errors: True
+
+  - name: Remove Keystone DB user anyhost
+    mysql_user: name={{ KEYSTONE_DBUSER }} host='%' state=absent
+    ignore_errors: True
+
+  - name: Remove Nova DB
+    mysql_db: name=nova state=absent
+    ignore_errors: True
+
+  - name: Remove Nova DB user
+    mysql_user: name={{ NOVA_DBUSER }} state=absent
+    ignore_errors: True
+
+  - name: Remove Nova DB user anyhost
+    mysql_user: name={{ NOVA_DBUSER }} host='%' state=absent
+    ignore_errors: True
+
+  - name: Remove Neutron DB
+    mysql_db: name=neutron state=absent
+    ignore_errors: True
+
+  - name: Remove Neutron DB user
+    mysql_user: name={{ NEUTRON_DBUSER }} state=absent
+    ignore_errors: True
+
+  - name: Remove Neutron DB user anyhost
+    mysql_user: name={{ NEUTRON_DBUSER }} host='%' state=absent
+    ignore_errors: True
+
+  - name: Remove Cinder DB
+    mysql_db: name=nova state=absent
+    ignore_errors: True
+
+  - name: Remove Cinder DB user
+    mysql_user: name={{ CINDER_DBUSER }} state=absent
+    ignore_errors: True
+
+  - name: Remove Cinder DB user anyhost
+    mysql_user: name={{ CINDER_DBUSER }} host='%' state=absent
+    ignore_errors: True
+
+  - name: Clear rabbitmq user persmissions
+    command: rabbitmqctl clear_permissions openstack
+    ignore_errors: True
+
+  - name: Delete rabbitmq user
+    command: rabbitmqctl delete_user openstack
+    ignore_errors: True
+
+  - name: Stop RabbitMQ
+    service: name=rabbitmq-server.service state=stopped
+    ignore_errors: True
+
+  - name: Delete the LVM volume group
+    shell: vgremove {{VGNAME}}
+    ignore_errors: True
+
+  - name: Delete the LVM physical volume
+    shell: pvremove {{PVNAME}}
+    ignore_errors: True
+

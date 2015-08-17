@@ -1,0 +1,3 @@
+- include: roles/compute/tasks/stop_services.yml
+- include: roles/network/tasks/stop_services.yml
+- include: roles/controller/tasks/purge.yml

@@ -1,0 +1,20 @@
+- hosts: compute
+
+  vars_files:
+  - ../../common/vars/main.yml
+
+  tasks:
+
+  - name: Stop the compute services
+    service: name={{item}} state=stopped
+    with_items:
+      - openstack-nova-api.service
+      - openstack-nova-cert.service
+      - openstack-nova-consoleauth.service
+      - openstack-nova-scheduler.service
+      - openstack-nova-conductor.service
+      - openstack-nova-novncproxy.service
+      - libvirtd.service
+      - openstack-nova-compute.service
+    ignore_errors: True
+
