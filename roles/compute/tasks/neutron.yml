@@ -26,6 +26,7 @@
 
 - name: Create symlink pointing to the ML2 plug-in configuration file
   shell: ln -s /etc/neutron/plugins/ml2/ml2_conf.ini /etc/neutron/plugin.ini
+  ignore_errors: True
 
 - name: Start the openvswitch service and enable at boot time
   service: name=openvswitch.service state=started enabled=yes

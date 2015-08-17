@@ -43,6 +43,7 @@
 
 - name: Create symlink pointing to the ML2 plug-in configuration file
   shell: ln -s /etc/neutron/plugins/ml2/ml2_conf.ini /etc/neutron/plugin.ini
+  ignore_errors: True
 
 - name: Replace the path of plugin.ini (bug issue)
   replace: dest=/usr/lib/systemd/system/neutron-openvswitch-agent.service regexp='plugins/openvswitch/ovs_neutron_plugin.ini' replace='plugin.ini' backup=yes
