@@ -1,4 +1,4 @@
-- name: Restart nove-api service
+- name: Restart nova-api service
   service: name={{item}} state=restarted
   with_items:
     - openstack-nova-api.service
